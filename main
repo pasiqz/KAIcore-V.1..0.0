@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KAI-Core Reader</title>
+  <style>
+    /* Base styles */
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f4f7fa;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    body.dark-mode {
+      background-color: #1a1a1a;
+      color: #ffffff;
+    }
+
+    h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .dark-mode h1 {
+      color: #ffffff;
+    }
+
+    .container {
+      display: flex;
+      justify-content: space-between;
+      max-width: 98%;
+      width: 100%;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .section {
+      width: 100%;
+      margin-bottom: 20px;
+      background-color: white;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .dark-mode .section {
+      background-color: #2d2d2d;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .preview {
+      white-space: pre-wrap;
+      border: 1px solid #ddd;
+      padding: 15px;
+      background-color: #f9f9f9;
+      margin-top: 10px;
+      border-radius: 4px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-size: 14px;
+      width: 97%;
+      font-family: monospace;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .dark-mode .preview {
+      background-color: #3d3d3d;
+      border-color: #555;
+      color: #ffffff;
+    }
+
+    #pdfContainer {
+      height: 500px;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+      position: relative;
+      margin-top: 20px;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .dark-mode #pdfContainer {
+      background-color: #3d3d3d;
+      border-color: #555;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .text-container {
+      width: 98%;
+      max-width: 800px;
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #tempTextBox {
+      width: 100%;
+      height: 100px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      resize: none;
+      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+
+    .dark-mode #tempTextBox {
+      background-color: #3d3d3d;
+      border-color: #555;
+      color: #ffffff;
+    }
+
+    #copyButton {
+      margin-top: 10px;
+      padding: 10px 20px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    #copyButton:hover {
+      background-color: #0056b3;
+      transform: scale(1.05);
+    }
+
+    .dark-mode #copyButton {
+      background-color: #1e90ff;
+    }
+
+    .dark-mode #copyButton:hover {
+      background-color: #007bff;
+    }
+
+    /* Style for highlighted search text */
+    .highlight {
+      background-color: yellow;
+      font-weight: bold;
+      color: #000;
+    }
+
+    /* Style for line numbers */
+    .line-number {
+      display: inline-block;
+      width: 30px;
+      text-align: right;
+      margin-right: 5px;
+      color: #888;
+      flex-shrink: 0;
+    }
+
+    .dark-mode .line-number {
+      color: #aaa;
+    }
+
+    /* Style for tick boxes */
+    .tick-box {
+      margin: 0 8px 0 0;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    /* Style for XML rows */
+    .xml-row {
+      display: flex;
+      align-items: center;
+      padding: 1px 0;
+      margin: 0;
+      line-height: 1;
+      transition: background-color 0.3s ease;
+    }
+
+    .xml-row:hover {
+      background-color: rgba(0, 123, 255, 0.1);
+    }
+
+    .dark-mode .xml-row:hover {
+      background-color: rgba(30, 144, 255, 0.1);
+    }
+
+    /* Dark mode toggle switch */
+    .theme-switch-wrapper {
+      display: flex;
+      align-items: center;
+      position: fixed;
+      top: 20px;
+      right: 20px;
+    }
+
+    .theme-switch {
+      display: inline-block;
+      height: 24px;
+      position: relative;
+      width: 50px;
+    }
+
+    .theme-switch input {
+      display: none;
+    }
+
+    .slider {
+      background-color: #ccc;
+      bottom: 0;
+      cursor: pointer;
+      left: 0;
+      position: absolute;
+      right: 0;
+      top: 0;
+      transition: 0.4s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      background-color: #fff;
+      bottom: 4px;
+      content: "";
+      height: 16px;
+      left: 4px;
+      position: absolute;
+      transition: 0.4s;
+      width: 16px;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #007bff;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    .slider.round {
+      border-radius: 24px;
+    }
+
+    .slider.round:before {
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Dark mode toggle switch -->
+  <div class="theme-switch-wrapper">
+    <label class="theme-switch" for="checkbox">
+      <input type="checkbox" id="checkbox" />
+      <div class="slider round"></div>
+    </label>
+  </div>
+
+  <h1>KAI-Core Reader</h1>
+
+  <!-- Hidden File Input for Folder Selection -->
+  <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
+  <button id="uploadFolderButton">Upload Folder</button>
+
+  <!-- Separate buttons for XML and PDF upload -->
+  <input type="file" id="xmlFileInput" accept=".xml" style="display: none;">
+  <button id="uploadXmlButton">Upload XML</button>
+
+  <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;">
+  <button id="uploadPdfButton">Upload PDF</button>
+
+  <div class="container">
+    <!-- XML Section -->
+    <div class="section" id="xmlSection">
+      <h2>XML Preview</h2>
+      <input type="text" id="searchInput" placeholder="Search XML..." style="margin-bottom: 10px; padding: 5px; width: 100%;">
+      <div class="preview" id="preview">Select a folder containing an XML file.</div>
+    </div>
+
+    <!-- PDF Section -->
+    <div class="section" id="pdfSection">
+      <h2>PDF Preview</h2>
+      <div id="pdfContainer">
+        <iframe id="pdfPreview" title="PDF Preview"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Temporary Text Box Section -->
+  <div class="text-container">
+    <textarea id="tempTextBox" placeholder="Store temporary data here..."></textarea>
+    <button id="copyButton">Copy</button>
+  </div>
+
+  <script>
+    // Dark mode toggle functionality
+    const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
+    const currentTheme = localStorage.getItem('theme');
+
+    if (currentTheme) {
+      document.body.classList.add(currentTheme);
+      if (currentTheme === 'dark-mode') {
+        toggleSwitch.checked = true;
+      }
+    }
+
+    function switchTheme(e) {
+      if (e.target.checked) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('theme', 'dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('theme', 'light-mode');
+      }
+    }
+
+    toggleSwitch.addEventListener('change', switchTheme, false);
+
+    // Existing JavaScript code for folder upload
+    document.getElementById('uploadFolderButton').addEventListener('click', function () {
+      document.getElementById('folderInput').click();
+    });
+
+    document.getElementById('folderInput').addEventListener('change', function (event) {
+      const files = event.target.files;
+      let xmlFile = null;
+      let pdfFile = null;
+
+      // Find XML and PDF files in the selected folder
+      for (let file of files) {
+        if (file.name.endsWith(".xml")) {
+          xmlFile = file;
+        } else if (file.name.endsWith(".pdf")) {
+          pdfFile = file;
+        }
+      }
+
+      if (xmlFile) {
+        loadXmlFile(xmlFile);
+      } else {
+        document.getElementById('preview').textContent = 'No XML file found in the folder.';
+      }
+
+      if (pdfFile) {
+        loadPdfFile(pdfFile);
+      } else {
+        document.getElementById('pdfPreview').src = '';
+        alert('No PDF file found in the folder.');
+      }
+    });
+
+    // Function to load XML file
+    function loadXmlFile(file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const xmlContent = e.target.result;
+        window.xmlContent = xmlContent;
+
+        const xmlWithLineNumbers = addLineNumbersAndTickBoxes(xmlContent);
+        window.xmlWithLineNumbers = xmlWithLineNumbers;
+        document.getElementById('preview').innerHTML = xmlWithLineNumbers;
+
+        addTickBoxEventListeners();
+      };
+      reader.readAsText(file);
+    }
+
+    // Function to load PDF file
+    function loadPdfFile(file) {
+      const pdfReader = new FileReader();
+      pdfReader.onload = function (e) {
+        const pdfBlob = new Blob([new Uint8Array(e.target.result)], { type: "application/pdf" });
+        const pdfURL = URL.createObjectURL(pdfBlob);
+        document.getElementById('pdfPreview').src = pdfURL;
+      };
+      pdfReader.readAsArrayBuffer(file);
+    }
+
+    // Add event listeners for XML and PDF upload buttons
+    document.getElementById('uploadXmlButton').addEventListener('click', function () {
+      document.getElementById('xmlFileInput').click();
+    });
+
+    document.getElementById('xmlFileInput').addEventListener('change', function (event) {
+      const file = event.target.files[0];
+      if (file && file.name.endsWith(".xml")) {
+        loadXmlFile(file);
+      } else {
+        alert('Please upload a valid XML file.');
+      }
+    });
+
+    document.getElementById('uploadPdfButton').addEventListener('click', function () {
+      document.getElementById('pdfFileInput').click();
+    });
+
+    document.getElementById('pdfFileInput').addEventListener('change', function (event) {
+      const file = event.target.files[0];
+      if (file && file.name.endsWith(".pdf")) {
+        loadPdfFile(file);
+      } else {
+        alert('Please upload a valid PDF file.');
+      }
+    });
+
+    // Function to escape XML tags and add line numbers and tick boxes to XML content
+    function addLineNumbersAndTickBoxes(xmlContent) {
+      const lines = xmlContent.split('\n');
+      let numberedContent = '';
+
+      lines.forEach((line, index) => {
+        const escapedLine = escapeXml(line);
+        numberedContent += `
+          <div class="xml-row">
+            <input type="checkbox" class="tick-box" data-line-number="${index + 1}">
+            <span class="line-number">${index + 1}</span> ${escapedLine}
+          </div>
+        `;
+      });
+
+      return numberedContent;
+    }
+
+    // Function to escape XML tags
+    function escapeXml(xml) {
+      return xml.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&apos;');
+    }
+
+    // Function to add event listeners to tick boxes
+    function addTickBoxEventListeners() {
+      const tickBoxes = document.querySelectorAll('.tick-box');
+      tickBoxes.forEach(tickBox => {
+        tickBox.addEventListener('change', function () {
+          updateTextBox();
+        });
+      });
+    }
+
+    // Function to update the text box based on selected rows
+    function updateTextBox() {
+      const selectedRows = [];
+      const tickBoxes = document.querySelectorAll('.tick-box:checked');
+
+      tickBoxes.forEach(tickBox => {
+        const lineNumber = tickBox.getAttribute('data-line-number');
+        const xmlRow = tickBox.parentElement.textContent.trim();
+        selectedRows.push(`Line ${lineNumber}: ${xmlRow}`);
+      });
+
+      document.getElementById('tempTextBox').value = selectedRows.join('\n');
+    }
+
+    // Function to highlight the search term in XML content
+    document.getElementById('searchInput').addEventListener('input', function (e) {
+      const searchTerm = e.target.value.toLowerCase();
+
+      if (searchTerm) {
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = window.xmlWithLineNumbers;
+        tempDiv.innerHTML = tempDiv.innerHTML.replace(regex, '<span class="highlight">$1</span>');
+        document.getElementById('preview').innerHTML = tempDiv.innerHTML;
+
+        const firstHighlight = document.querySelector('.highlight');
+        if (firstHighlight) {
+          firstHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        addTickBoxEventListeners();
+      } else {
+        document.getElementById('preview').innerHTML = window.xmlWithLineNumbers;
+        document.getElementById('preview').scrollTop = 0;
+        addTickBoxEventListeners();
+      }
+    });
+
+    // Function to copy the text in the temporary text box
+    document.getElementById('copyButton').addEventListener('click', function () {
+      const text = document.getElementById('tempTextBox').value;
+      if (text) {
+        navigator.clipboard.writeText(text).then(function () {
+          alert('Text copied to clipboard!');
+        });
+      } else {
+        alert('No text to copy.');
+      }
+    });
+  </script>
+
+</body>
+</html>
